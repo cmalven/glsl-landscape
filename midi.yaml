@@ -1,0 +1,16 @@
+in:
+  Midi_Fighter_Twister:
+    -  key: 0
+       name: u_noise_scale
+       type: scalar
+       value: 0.5
+       map: [0, 5]
+    -  key: 1
+       name: u_circle_size
+       type: scalar
+       value: 1.5
+       map: [0.5, 3]
+
+out:
+  - csv
+  - osc://localhost:8000

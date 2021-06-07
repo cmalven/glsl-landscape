@@ -1,0 +1,4 @@
+[submodule "lygia"]
+	path = lygia
+	url = https://github.com/patriciogonzalezvivo/lygia.git
+	branch = main
