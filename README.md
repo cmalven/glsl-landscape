@@ -19,7 +19,7 @@ Next, you'll need to install the following:
 glslViewer shader.frag -p 8000
 ```
 
-and
+then
 
 ```shell
 midigyver midi.yaml
