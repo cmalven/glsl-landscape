@@ -19,6 +19,39 @@ uniform float u_time;
 #include "lygia/generative/snoise.glsl"
 #include "lygia/color/blend/multiply.glsl"
 
+float rand2D(in vec2 co) {
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+float rand3D(in vec3 co) {
+    return fract(sin(dot(co.xyz ,vec3(12.9898,78.233,144.7272))) * 43758.5453);
+}
+
+float dotNoise2D(in float x, in float y, in float fractionalMaxDotSize, in float dDensity) {
+    float integer_x = x - fract(x);
+    float fractional_x = x - integer_x;
+
+    float integer_y = y - fract(y);
+    float fractional_y = y - integer_y;
+
+    if (rand2D(vec2(integer_x+1.0, integer_y +1.0)) > dDensity)
+    {return 0.0;}
+
+    float xoffset = (rand2D(vec2(integer_x, integer_y)) -0.5);
+    float yoffset = (rand2D(vec2(integer_x+1.0, integer_y)) - 0.5);
+    float dotSize = 0.5 * fractionalMaxDotSize * max(0.25,rand2D(vec2(integer_x, integer_y+1.0)));
+
+    vec2 truePos = vec2 (0.5 + xoffset * (1.0 - 2.0 * dotSize) , 0.5 + yoffset * (1.0 -2.0 * dotSize));
+
+    float distance = length(truePos - vec2(fractional_x, fractional_y));
+
+    return 1.0 - smoothstep (0.3 * dotSize, 1.0* dotSize, distance);
+}
+
+float DotNoise2D(in vec2 coord, in float wavelength, in float fractionalMaxDotSize, in float dDensity) {
+    return dotNoise2D(coord.x/wavelength, coord.y/wavelength, fractionalMaxDotSize, dDensity);
+}
+
 vec3 cloud(in vec2 st, in vec2 offset, in float dist) {
     float cloudSpeed = (1.0 - dist) * 0.1;
     vec2 basePos = st + offset * vec2(-1.0, 1.0);
@@ -89,6 +122,21 @@ void main(void) {
     color = clamp(color, vec3(0, 0, 0), vec3(1.0, 1.0, 1.0));
     color += skyColor * 4.0 * fgMountainColor * st.y;
     color += skyColor * 4.0 * fgMountainColor * st.y * mountainFgHeight*3.0;
+
+    // Dust
+    float noiseSpeedX = 2.0 * u_time;
+    vec2 noisePos = st.xy + vec2(noiseSpeedX, 0.0);
+    float oscAmp = 0.1;
+    float oscPeriod = 3.0;
+    float noiseStrength = 0.3;
+    noiseStrength = oscAmp * sin((PI * 2.0) * (u_time / oscPeriod)) + noiseStrength;
+    float noiseWavelength = 0.1;
+    float noiseSize = 0.08;
+    float noiseDensity = 1.0;
+    float noise1 = DotNoise2D(noisePos, noiseWavelength, noiseSize, noiseDensity);
+    float noise2 = DotNoise2D(noisePos - u_time*vec2(0.2, 0.0), noiseWavelength, noiseSize, noiseDensity);
+    color += noise1 * noiseStrength;
+    color += noise2 * noiseStrength;
 
     gl_FragColor = vec4(color, 1.0);
 }
