@@ -123,18 +123,26 @@ void main(void) {
     color += skyColor * 4.0 * fgMountainColor * st.y;
     color += skyColor * 4.0 * fgMountainColor * st.y * mountainFgHeight*3.0;
 
+    // Mountain shadow
+    float mountainFgShadowY1 = 0.06 * cos(2.0*PI * ((st.x + 2.1 * st.y + mountainFgPanTime) / 1.0) );
+    float mountainFgShadowY2 = 0.02 * cos(2.0*PI * ((st.x + 2.1 * st.y + mountainFgPanTime) / 0.4));
+    float mountainFgShadowHeight = mountainFgShadowY1 + mountainFgShadowY2;
+    float elevationChangeDir = mountainFgHeight - mountainFgShadowHeight;
+    color += elevationChangeDir * vec3(1.00, 1.00, 1.00) * 1.0 * (1.0 - st.y);
+
     // Dust
     float noiseSpeedX = 2.0 * u_time;
-    vec2 noisePos = st.xy + vec2(noiseSpeedX, 0.0);
+    vec2 noisePos = vec2(st.x, st.y) + vec2(noiseSpeedX, 0.0);
     float oscAmp = 0.1;
     float oscPeriod = 3.0;
     float noiseStrength = 0.3;
     noiseStrength = oscAmp * sin((PI * 2.0) * (u_time / oscPeriod)) + noiseStrength;
+    noiseStrength *= st.y + 0.3;
     float noiseWavelength = 0.1;
     float noiseSize = 0.08;
     float noiseDensity = 1.0;
     float noise1 = DotNoise2D(noisePos, noiseWavelength, noiseSize, noiseDensity);
-    float noise2 = DotNoise2D(noisePos - u_time*vec2(0.2, 0.0), noiseWavelength, noiseSize, noiseDensity);
+    float noise2 = DotNoise2D(noisePos - u_time*vec2(0.5, 0.0), noiseWavelength, noiseSize, noiseDensity);
     color += noise1 * noiseStrength;
     color += noise2 * noiseStrength;
 
