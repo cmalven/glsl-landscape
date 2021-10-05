@@ -63,6 +63,43 @@ vec3 cloud(in vec2 st, in vec2 offset, in float dist) {
     return fill(cloudSdf, cloudSize) * vec3(cloudColor, cloudColor, cloudColor);
 }
 
+vec3 mountain(
+    in vec2 st,
+    in float moveSpeed,
+    in float amp1,
+    in float period1,
+    in float amp2,
+    in float period2,
+    in float offsetY,
+    in vec3 initialColor,
+    in vec3 shadeColor,
+    in float strength
+) {
+    vec3 newColor = initialColor;
+
+    float speed = u_time * moveSpeed;
+    float height1 = amp1 * cos(2.0*PI * ((st.x + speed) / period1) );
+    float height2 = amp2 * cos(2.0*PI * ((st.x + speed) / period2));
+    float totalHeight = height1 + height2;
+    float yAdjust = 0.3;
+    float fgMountainColor = 1.0 - step(totalHeight, st.y - yAdjust - offsetY);
+    newColor -= fgMountainColor; // knock out the mountain shape
+    newColor = clamp(newColor, vec3(0, 0, 0), vec3(1.0, 1.0, 1.0)); // clamp the total color to black/white
+    newColor += (shadeColor + 0.3) * fgMountainColor * strength; // re-add some background color equal to how dramatic we want the mountain to be
+    newColor += shadeColor * 4.0 * fgMountainColor * st.y * (1.0 - strength);
+    newColor += shadeColor * 4.0 * fgMountainColor * st.y * totalHeight*3.0;
+
+    // Mountain shadow
+    float shadowAngle = distance(0.5, st.x) * 3.0;
+    float mountainFgShadowY1 = amp1 * cos(2.0*PI * ((st.x + shadowAngle * st.y + speed) / period1) );
+    float mountainFgShadowY2 = amp2 * cos(2.0*PI * ((st.x + shadowAngle * st.y + speed) / period2));
+    float mountainFgShadowHeight = mountainFgShadowY1 + mountainFgShadowY2;
+    float elevationChangeDir = totalHeight - mountainFgShadowHeight;
+    newColor += elevationChangeDir * vec3(1.00, 1.00, 1.00) * 1.0 * (1.0 - st.y) * fgMountainColor;
+
+    return newColor;
+}
+
 void main(void) {
     vec3 color = vec3(0.0);
     vec2 st = gl_FragCoord.xy/u_resolution.xy;
@@ -97,38 +134,47 @@ void main(void) {
     color += cloud(st, vec2(0.145, 0.05), 0.6);
     color += cloud(st, vec2(0.19, 0.05), 0.6);
 
-    // City (Background)
-    float cityBgPanTime = u_time * 0.04;
-    float cityBgY1 = 0.04 * cos(2.0*PI * ((st.x + cityBgPanTime) / 0.5) );
-    float cityBgY2 = 0.04 * cos(2.0*PI * ((st.x + cityBgPanTime) / 0.2));
-    color -= (1.0 - step(cityBgY1 + cityBgY2*0.1, st.y - 0.32)) * 0.04;
+    // Mountains (Background)
+    color = mountain(
+        st,
+        0.04, // speed
+        0.02, // amp1
+        0.5, // period1
+        0.02, // amp2
+        0.4, // period2
+        0.05, // offsetY
+        color, // initialColor
+        skyColor, // color,
+        1.0 // strength
+    );
 
     // Mountains (Background)
-    float mountainBgPanTime = u_time * 0.09;
-    float mountainBgY1 = 0.04 * cos(2.0*PI * ((st.x + mountainBgPanTime) / 1.0) );
-    float mountainBgY2 = 0.04 * cos(2.0*PI * ((st.x + mountainBgPanTime) / 0.4));
-    float bgMountainColor = (1.0 - step(mountainBgY1 + mountainBgY2*0.1, st.y - 0.3));
-    color -= bgMountainColor;
-    color = clamp(color, vec3(0, 0, 0), vec3(1.0, 1.0, 1.0));
-    color += (skyColor + 0.1) * bgMountainColor;
+    color = mountain(
+        st,
+        0.09, // speed
+        0.04, // amp1
+        1.0, // period1
+        0.02, // amp2
+        0.4, // period2
+        0.03, // offsetY
+        color, // initialColor
+        skyColor, // color,
+        0.5 // strength
+    );
 
-    // Mountains (Background)
-    float mountainFgPanTime = u_time * 0.19;
-    float mountainFgY1 = 0.06 * cos(2.0*PI * ((st.x + mountainFgPanTime) / 1.0) );
-    float mountainFgY2 = 0.02 * cos(2.0*PI * ((st.x + mountainFgPanTime) / 0.4));
-    float mountainFgHeight = mountainFgY1 + mountainFgY2;
-    float fgMountainColor = 1.0 - step(mountainFgHeight, st.y - 0.3);
-    color -= fgMountainColor;
-    color = clamp(color, vec3(0, 0, 0), vec3(1.0, 1.0, 1.0));
-    color += skyColor * 4.0 * fgMountainColor * st.y;
-    color += skyColor * 4.0 * fgMountainColor * st.y * mountainFgHeight*3.0;
-
-    // Mountain shadow
-    float mountainFgShadowY1 = 0.06 * cos(2.0*PI * ((st.x + 2.1 * st.y + mountainFgPanTime) / 1.0) );
-    float mountainFgShadowY2 = 0.02 * cos(2.0*PI * ((st.x + 2.1 * st.y + mountainFgPanTime) / 0.4));
-    float mountainFgShadowHeight = mountainFgShadowY1 + mountainFgShadowY2;
-    float elevationChangeDir = mountainFgHeight - mountainFgShadowHeight;
-    color += elevationChangeDir * vec3(1.00, 1.00, 1.00) * 1.0 * (1.0 - st.y);
+    // Mountains (Foreground)
+    color = mountain(
+        st,
+        0.19, // speed
+        0.06, // amp1
+        1.0, // period1
+        0.02, // amp2
+        0.4, // period2
+        0.0, // offsetY
+        color, // initialColor
+        skyColor, // color,
+        0.1 // strength
+    );
 
     // Dust
     float noiseSpeedX = 2.0 * u_time;
