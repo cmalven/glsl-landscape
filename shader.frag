@@ -18,6 +18,7 @@ uniform float u_time;
 #include "lygia/space/rotate.glsl"
 #include "lygia/generative/snoise.glsl"
 #include "lygia/color/blend/multiply.glsl"
+#include "lygia/generative/random.glsl"
 
 float rand2D(in vec2 co) {
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -77,9 +78,10 @@ vec3 mountain(
 ) {
     vec3 newColor = initialColor;
 
+    float timeOffset = random(offsetY) * 4000.0;
     float speed = u_time * moveSpeed * 0.005;
-    float height1 = amp1 * cos(2.0*PI * (((st.x + u_time * 0.1) + speed) / period1) );
-    float height2 = amp2 * cos(2.0*PI * (((st.x) + u_time * 0.3 + speed) / period2));
+    float height1 = amp1 * cos(2.0*PI * (((st.x + timeOffset + u_time * 0.1) + speed) / period1));
+    float height2 = amp2 * cos(2.0*PI * (((st.x) + timeOffset + u_time * 0.3 + speed) / period2));
     float totalHeight = height1 + height2;
     float yAdjust = 0.3;
     float fgMountainColor = 1.0 - step(totalHeight, st.y - yAdjust - offsetY);
