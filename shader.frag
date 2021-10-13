@@ -172,7 +172,7 @@ void main(void) {
         1.0, // period1
         0.02, // amp2
         0.4, // period2
-        0.0, // offsetY
+        -0.05, // offsetY
         color, // initialColor
         skyColor, // color,
         0.1 // strength
